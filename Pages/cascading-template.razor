@@ -1,0 +1,97 @@
+@inject NavigationManager NavigationManager
+@inject IJSRuntime js
+@inject ContentService Content
+@using System.Web
+
+<PageTitle>SkyRoam Docs - @Title</PageTitle>
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Home</a></li>
+        @foreach (var segment in _slugSegments)
+        {
+            var isActive = segment == _slugSegments.Last();
+            var styleClass = isActive ? "breadcrumb-item active" : "breadcrumb-item";
+            var link = string.Join("/", _slugSegments.TakeWhile(s => s != segment).Append(segment));
+            var segmentText = HttpUtility.UrlDecode(segment);
+
+            @if (isActive)
+            {
+                <li class="@styleClass" aria-current="@segment">@Title</li>
+            }
+            else
+            {
+                <li class="@styleClass"><a href="@link" class="text-decoration-none">@segmentText</a></li>
+            }
+        }
+    </ol>
+</nav>
+
+<!-- Page Header -->
+<div class="mb-5">
+    <h1 class="display-5 fw-bold mb-3">@Title</h1>
+    <p class="lead text-muted">@Description</p>
+</div>
+
+<!-- Content Sections -->
+@Body
+<!-- Right Sidebar - Table of Contents (Desktop) -->
+<SectionContent SectionName="Sidebar">
+    <div id="bs-scroll-target">
+        <PageToc PageSections="@_sections" QuickLinks="@_quickLinks" />
+    </div>
+</SectionContent>
+
+<!-- Mobile Sidebar - Table of Contents (Mobile) -->
+<SectionContent SectionName="MobileSidebar">
+    <PageTocMobile PageSections="@_sections" />
+</SectionContent>
+
+@code {
+    private List<TocNode> contentIndex = [];
+
+    private string activeSlug = string.Empty;
+
+    private List<string> _slugSegments = [];
+
+    private Dictionary<string, string> _quickLinks = new Dictionary<string, string>()
+    {
+        { "Home", "/" },
+        { "GitHub", "https://github.com/OpenLBE/support" },
+        { "Support", "https://github.com/OpenLBE/support/discussions" },
+        { "Report Issue", "https://github.com/OpenLBE/support/issues/new" }
+
+    };
+
+    protected override void OnInitialized()
+    {
+        // Get the current page slug from the URL
+        activeSlug = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+        if (activeSlug.StartsWith("/"))
+        {
+            // Remove leading slash if present
+            activeSlug = activeSlug.Substring(1);
+        }
+
+        _slugSegments = activeSlug
+            .Split('/')
+            .ToList();
+
+        contentIndex = Content.GetSiteToc();
+
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool isFirstRender)
+    {
+        await base.OnAfterRenderAsync(isFirstRender);
+
+        if (isFirstRender)
+        {
+            await js.InvokeVoidAsync("initializeDocsPlugin");
+            await js.InvokeVoidAsync("initScrollSpy");
+        }
+    }
+}

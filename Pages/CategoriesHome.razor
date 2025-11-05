@@ -1,0 +1,149 @@
+@page "/categories/{Category}"
+@using SkyRoam.Components
+@inject ContentService Content
+
+<!-- Category Header -->
+<div class="category-header">
+    <div class="d-flex align-items-start justify-content-between">
+        <div>
+            @if (!string.IsNullOrEmpty(Category) && _category != null)
+            {
+                <h1 class="display-6 fw-bold mb-3">
+                    <Blazicon Svg="FontAwesomeSolidIcon.Cubes" class="text-primary me-3" />
+                    @Category
+                </h1>
+                <p class="lead mb-0">@_category.Description</p>
+            }
+            else
+            {
+                <h1 class="display-6 fw-bold mb-3">Category Not Found</h1>
+                <p class="lead mb-0">The requested category does not exist.</p>
+            }
+        </div>
+    </div>
+
+    @if (_category != null)
+    {
+        <div class="category-stats">
+            <div class="stat-item">
+                <Blazicon Svg="FontAwesomeSolidIcon.File" />
+                <span>@_category.ArticleCount Articles</span>
+            </div>
+            <div class="stat-item">
+                <Blazicon Svg="FontAwesomeSolidIcon.Clock" />
+                <span>~@_category.ReadTime min read</span>
+            </div>
+            <div class="stat-item">
+                <Blazicon Svg="FontAwesomeSolidIcon.User" />
+                <span>All Levels</span>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_category != null)
+{
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" @onclick="@(() => FilterArticles("all"))"> All Articles</button>
+        <button class="filter-tab" @onclick="@(() => FilterArticles("beginner"))"> Beginner</button>
+        <button class="filter-tab" @onclick="@(() => FilterArticles("intermediate"))"> Intermediate</button>
+        <button class="filter-tab" @onclick="@(() => FilterArticles("advanced"))"> Advanced</button>
+    </div>
+
+    <!-- Essential Components Section -->
+    <section class="mb-5">
+        <h3 class="mb-4">
+            @_selectedLevel Articles
+        </h3>
+
+        @if (_filteredArticles.Count > 0)
+        {
+            @foreach (var article in _filteredArticles)
+            {
+                <ArticleCard Article="@article" />
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <p class="text-muted accordion-body">No articles found for the @_selectedLevel level.</p>
+            </div>
+        }
+
+    </section>
+}
+
+
+@code {
+
+    [Parameter]
+    public string? Category { get; set; } = string.Empty;
+
+    private ArticleCategory? _category;
+
+    private string _selectedLevel = "Beginner";
+
+    private List<ArticleSummary> _filteredArticles = [];
+    private List<ArticleSummary> _allArticles = [];
+
+    protected override void OnParametersSet()
+    {
+        // Load the category data based on the parameter
+        _category = Content.GetArticleCategories()
+        .FirstOrDefault(c => c.Title.Equals(Category, StringComparison.OrdinalIgnoreCase));
+
+        if (_category == null)
+        {
+            // Handle case where category is not found
+            Console.WriteLine($"Category '{Category}' not found.");
+        }
+        else
+        {
+            // Load articles for the category
+            var categoryPages = Content.GetCategoryPages(_category.Title);
+
+            foreach (var page in categoryPages)
+            {
+                var article = new ArticleSummary(
+                    page.Title,
+                    page.Description,
+                    page.Slug,
+                    page.Metadata.TryGetValue("level", out var level) ? level.ToString() : "Beginner",
+                    page.Metadata.TryGetValue("readTimeMinutes", out var readTime) ? Convert.ToInt32(readTime) : 0
+                );
+
+                _allArticles.Add(article);
+            }
+
+            _filteredArticles = _allArticles; // Initially show all articles
+
+        }
+
+        base.OnParametersSet();
+    }
+
+    private void FilterArticles(string filter)
+    {
+        _selectedLevel = filter switch
+        {
+            "beginner" => "Beginner",
+            "intermediate" => "Intermediate",
+            "advanced" => "Advanced",
+            _ => "All Levels"
+        };
+
+        if (filter == "all")
+        {
+            _filteredArticles = _allArticles;
+        }
+        else
+        {
+            _filteredArticles = _allArticles
+                .Where(a => a.Level.Equals(_selectedLevel, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        StateHasChanged(); // Refresh the UI to show filtered articles
+    }
+}

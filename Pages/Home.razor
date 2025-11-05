@@ -1,0 +1,137 @@
+@page "/docs"
+@using SkyRoam.Components
+@inject NavigationManager NavigationManager
+@inject ContentService Content
+
+<div class="p-4 bdr-content-area">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <h1 class="display-6 fw-bold mb-3">Blake Documentation</h1>
+        <p class="lead mb-0">Find everything you need to get started, build sites and templates, and deploy successfully.</p>
+    </div>
+
+    <!-- Search Bar - Hidden on mobile -->
+    <div class="search-container d-none d-md-block">
+        <div class="position-relative">
+            <span class="search-icon"><Blazicon Svg="FontAwesomeSolidIcon.MagnifyingGlass" /></span>
+            <input type="text" class="form-control form-control-lg search-input text-light" placeholder="Search documentation..."
+                   id="searchInput"
+                   @bind-value=@_searchQuery
+                   @bind-value:event="oninput"
+                   @onkeyup="@OnSearchKeyUp">
+            @if(_showSearchButton)
+            {
+                <button class="btn btn-dark rounded-circle h-75 position-absolute end-0 top-0 me-1 mt-1 py-1" @onclick="@NavigateToSearch">
+                    <Blazicon Svg="FontAwesomeSolidIcon.RightLong" class="my-1 me-1" />
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="mb-4">
+        <h6 class="text-muted text-uppercase small fw-bold mb-3">Quick Access</h6>
+        <div class="d-flex flex-wrap">
+            @foreach (var quPage in _quickAccessPages)
+            {
+                var icon = Content.GetCategoryIcon(quPage.Title);
+
+                <a href="@quPage.Slug" class="quick-link">
+                    <Blazicon Svg="@icon" class="me-2" />
+                    @quPage.Title
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="mb-5">
+        <h3 class="mb-4">Browse by Category</h3>
+        <div class="row g-4 flex flex-row">
+            @foreach (var category in _categories.Take(4))
+            {
+                <CategoryCard Category="@category" />
+            }
+        </div>
+    </div>
+
+    <!-- Recent Updates -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4>Recent Updates</h4>
+        </div>
+        <div class="row g-3">
+
+            @foreach (var update in _recentUpdates)
+            {
+                var updatedDaysAgo = (DateTime.Now - update.Date)?.Days ?? 0;
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <div class="bg-success rounded-circle me-3 mt-1" style="width: 8px; height: 8px;"></div>
+                        <div>
+                            <h6 class="mb-1">@update.Title</h6>
+                            <p class="text-muted small mb-1">@update.Description</p>
+                            <small class="text-muted">@updatedDaysAgo days ago</small>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<SectionContent SectionName="Sidebar">
+    <PopularArticles />
+</SectionContent>
+
+
+
+@code {
+
+    private List<PageModel> _quickAccessPages = [];
+
+    private List<PageModel> _recentUpdates = [];
+
+    private List<ArticleCategory> _categories = [];
+
+    private string _searchQuery = string.Empty;
+
+    private bool _showSearchButton = false;
+
+    protected override void OnInitialized()
+    {
+        _quickAccessPages = Content.GetQuickAccessPages();
+        _recentUpdates = Content.GetRecentUpdates();
+        _categories = Content.GetArticleCategories();
+
+        base.OnInitialized();
+    }
+
+    private void OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_searchQuery) && _searchQuery.Length > 2)
+        {
+            _showSearchButton = true;
+        }
+        else
+        {
+            _showSearchButton = false;
+        }
+
+        if(e.Key == "Enter" && _showSearchButton)
+        {
+            NavigateToSearch();
+        }
+
+        StateHasChanged();
+    }
+
+    private void NavigateToSearch()
+    {
+        if (!string.IsNullOrWhiteSpace(_searchQuery) && _searchQuery.Length > 2)
+        {
+            NavigationManager.NavigateTo($"/search/{Uri.EscapeDataString(_searchQuery)}");
+        }
+    }
+}

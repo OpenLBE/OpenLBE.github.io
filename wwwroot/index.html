@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkyRoam</title>
+    <base href="/" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="_content/BlakePlugin.DocsRenderer/lib/css/plugin.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="SkyRoam.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">
+        <div class="loader"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="_content/BlakePlugin.DocsRenderer/lib/js/prism.js"></script>
+    <script src="_content/BlakePlugin.DocsRenderer/lib/js/plugin.js"></script>
+    <script>
+        // Function to get the current OS
+        window.getOS = () => {
+            const platform = navigator.platform.toLowerCase();
+            return /mac/.test(platform) ? "mac" : "other";
+        };
+
+        // Focus helper
+        window.focusElement = (id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.focus();
+                // Also select the text if it's an input
+                if (el.tagName === 'INPUT' && el.type === 'text') {
+                    el.select();
+                }
+            }
+        };
+
+        window.scrollToTop = () => {
+            console.log("Scrolling to top");
+            // Try to find the main scrollable content area by ID first
+            const mainContentById = document.getElementById("main-content");
+            if (mainContentById) {
+                console.log("Main content found by ID, scrolling...");
+                mainContentById.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // Fallback to class selector
+            const mainContent = document.querySelector(".main-content");
+            if (mainContent) {
+                console.log("Main content element found by class, scrolling...");
+                mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // Final fallback to window scroll
+            console.log("No main content found, trying window scroll");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.initScrollSpy = () => {
+            const el = document.querySelector('[data-bs-spy="scroll"]');
+            if (el) {
+                bootstrap.ScrollSpy.getInstance(el)?.dispose(); // in case it's reinitialised
+
+                // Find all anchor links in the scroll target and fix invalid IDs
+                const scrollTarget = document.getElementById('bs-scroll-target');
+                if (scrollTarget) {
+                    const links = scrollTarget.querySelectorAll('a[href^="#"]');
+                    links.forEach(link => {
+                        const href = link.getAttribute('href');
+                        if (href && href.length > 1) {
+                            const id = href.substring(1);
+                            // If the ID starts with a number, escape it for CSS
+                            if (/^\d/.test(id)) {
+                                const targetElement = document.getElementById(id);
+                                if (targetElement) {
+                                    // Update the href to use CSS.escape
+                                    link.setAttribute('href', '#' + CSS.escape(id));
+                                }
+                            }
+                        }
+                    });
+                }
+
+                new bootstrap.ScrollSpy(el, {
+                    target: '#bs-scroll-target',
+                    rootMargin: '0px 0px -50%',
+                    threshold: [0.1, 0.5, 1],
+                    smoothScroll: true
+                });
+            }
+        };
+
+        // Scrollbar auto-hide functionality
+        window.initScrollbarBehavior = () => {
+            const scrollableElements = document.querySelectorAll('.scrollable-area');
+            
+            // Return early if no elements found
+            if (scrollableElements.length === 0) {
+                return;
+            }
+            
+            scrollableElements.forEach(element => {
+                // Skip if element already has the behavior attached
+                if (element.dataset.scrollbarInitialized) {
+                    return;
+                }
+                element.dataset.scrollbarInitialized = 'true';
+                
+                let scrollTimeout;
+                
+                // Function to show scrollbar
+                const showScrollbar = () => {
+                    element.classList.add('scrolling');
+                };
+                
+                // Function to hide scrollbar with delay
+                const hideScrollbar = (delay = 1000) => {
+                    if (scrollTimeout) {
+                        clearTimeout(scrollTimeout);
+                    }
+                    scrollTimeout = setTimeout(() => {
+                        element.classList.remove('scrolling');
+                    }, delay);
+                };
+                
+                // Handle direct scrolling on the element
+                element.addEventListener('scroll', () => {
+                    showScrollbar();
+                    hideScrollbar(1000);
+                });
+                
+                // Handle scrolling on child TOC elements
+                const tocElements = element.querySelectorAll('.bdr-toc');
+                tocElements.forEach(toc => {
+                    toc.addEventListener('scroll', () => {
+                        showScrollbar();
+                        hideScrollbar(1000);
+                    });
+                });
+                
+                // Show scrollbar on hover
+                element.addEventListener('mouseenter', () => {
+                    showScrollbar();
+                });
+                
+                // Hide scrollbar when not hovering (with shorter delay)
+                element.addEventListener('mouseleave', () => {
+                    hideScrollbar(300);
+                });
+            });
+        };
+
+        // Initialize scrollbar behavior when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.initScrollbarBehavior();
+            
+            // Re-initialize when Bootstrap offcanvas is shown
+            const offcanvasElements = document.querySelectorAll('.offcanvas');
+            offcanvasElements.forEach(offcanvas => {
+                offcanvas.addEventListener('shown.bs.offcanvas', () => {
+                    // Small delay to ensure content is rendered
+                    setTimeout(() => {
+                        window.initScrollbarBehavior();
+                    }, 100);
+                });
+            });
+        });
+
+
+    </script>
+</body>
+
+</html>
