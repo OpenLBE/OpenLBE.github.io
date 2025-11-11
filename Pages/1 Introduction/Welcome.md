@@ -17,6 +17,10 @@ SkyRoam is a Spatial Computing Engine framework.
 
 **SkyRoam** is a Spatial Computing Engine framework.
 
+<p align="center">
+  <img src="./images/skyroam.png" alt="示例图片" width="300"/>
+</p>
+
 ## Why use SkyRoam?
 
 Built with native platform tools, SkyRoam provides everything you need to succeed.

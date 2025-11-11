@@ -43,7 +43,7 @@ Requirements.
 ### Unity (Recommended)
 
 [Official site](https://unity.com/)
-* Version requirement: >=2022.3.35 LTS && <2022.3.62 LTS
+* Version requirement: >=2022.3.36 LTS && <2022.3.62 LTS
 
 ### Unreal Engine
 
