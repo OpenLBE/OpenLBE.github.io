@@ -40,5 +40,5 @@ Extremely simplified, ready to use out-of-the-box with no complex setup
 ### Community-Driven Development
 Iteration fueled by real-world projects, with practical experience feedback contributing to optimal community solutions
 
-### Open Source & Free
-Fully open-sourced with zero cost, empowering content development
+### Open & Free
+Fully open with zero cost, empowering content development
